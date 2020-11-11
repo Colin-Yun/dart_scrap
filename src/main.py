@@ -17,11 +17,13 @@ def gt_co_rept():
 
     crtfc_key ="956243c104077738ebc3c93bd62c3e0c019eb877"
 
+    #rcept_no = "20201111000101"     #파이오링크
+    rcept_no = "20201110000346"     #솔브레인홀딩스
     #rcept_no = "20200515001451"     #samsung
     #rcept_no = "20200515000890"    #seohan
     #rcept_no = '20200515001237'     #"shupigan"
     #rcept_no = '20200515001547'     #파루
-    rcept_no = '20200515002575'     #레고캠바이오
+    #rcept_no = '20200515002575'     #레고캠바이오
 
     home = "https://opendart.fss.or.kr/api/document.xml?crtfc_key="
     url = home + crtfc_key +  "&rcept_no=" + rcept_no
@@ -121,11 +123,17 @@ def pars_xml(xml_orgi):
 def filt_str(bdy_txt):
     filt_txt =''
     for line in bdy_txt:
+
+        if '.' in line:
+            line = line.replace('&cr','').replace(',',' ').replace('.',' ').replace('(','').replace(')','').replace(';','').replace('/',' ')
+            filt_txt += line + '\n'
+        '''
         if line == '&cr':
             pass
         else:
-            line = line.replace('&cr','').replace(',',' ').replace('(','').replace(')','').replace(';','')
+            line = line.replace('&cr','').replace(',','').replace('(','').replace(')','').replace(';','')
             filt_txt += line
+        '''
     return filt_txt
 
 
@@ -166,23 +174,27 @@ def anly_tkn(stpwrds, tkned):
                 tkns.append(tkn)
         else:
             for stpwrd in stpwrds: # 불용어 리스트 요소 하나씩 탐색 하여 반환
-                #if stop_word in token and len(stop_word) != 1: # 만일 불용어가 문장에 포함되어 있을 경우. 그리고 불용어가 한글자가 아닌 경우
                 if stpwrd in tkn : # 만일 불용어가 문장에 포함되어 있을 경우
                     nw_tkn = tkn.replace(stpwrd, '')
 
                     if len(nw_tkn) > 1: # 원 단어에서 불용어 삭제 시 단어의 길이가 한글자보다 큰 경우
                         if len(stpwrd) == 1: # 불용어가 한글자 인경우 사전을 뒤져 불용어로 인한 정상단어 형태가 망가지는 것을 방지한다,
-                            kr_dict = ret_match_dict(tkn)
 
+                            kr_dict = ret_match_dict(tkn)
                             if tkn in kr_dict: #우리말샘 전체 사전에서 탐색
                                 pass  #사전에 있으면 불용어 유지
-                            else:
-                                tkn = tkn.replace(stpwrd, '') # 문장에서 불용어를 제거
 
+                            else: # 우리말샘 사전탐색 후 존재하지 않다면,
+                                if tkn[len(tkn) - 1] == stpwrd: # 불용어가 토큰의 가장 마지막에 위치한다면,
+                                    if nw_tkn in kr_dict: # 불용어 삭제된 토큰이 우리말 사전에 있는지 검색
+                                        #print(nw_tkn)
+                                        tkn = tkn.replace(stpwrd, '') # 사전에 존재한다면 토큰에서 불용어를 제거
                         else:
                             tkn = tkn.replace(stpwrd, '') # 문장에서 불용어를 제거
                     else:
                         tkn = ''
+
+
             tkns.append(tkn)
     tkns = list(filter(None, tkns)) #빈문자열제거
 
@@ -199,9 +211,6 @@ def dedup_tkn(kwds):
     i = 0
     for kwd in kwds:
         j = 0
-
-        if '방역' in kwd:
-            print(kwd)
 
         if len(kwd) > 1:
             kwd_filt.append(kwd)
