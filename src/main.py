@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import lib.korea_dict as kd
 
 stpwrd_path = './doc/stopword/stopword_dict.txt'
+indwrd_path = './doc/indwrd/indwrd_dict.txt'
 dict_list =[[]]
 for i in range(len(kd.CHOSUNG_LIST) - 1):
     dict_list.append([])
@@ -18,12 +19,13 @@ def gt_co_rept():
     crtfc_key ="956243c104077738ebc3c93bd62c3e0c019eb877"
 
     #rcept_no = "20201111000101"     #파이오링크
-    rcept_no = "20201110000346"     #솔브레인홀딩스
+    #rcept_no = "20201110000346"     #솔브레인홀딩스
     #rcept_no = "20200515001451"     #samsung
     #rcept_no = "20200515000890"    #seohan
     #rcept_no = '20200515001237'     #"shupigan"
     #rcept_no = '20200515001547'     #파루
     #rcept_no = '20200515002575'     #레고캠바이오
+    rcept_no = '20200514000988'         #OCI
 
     home = "https://opendart.fss.or.kr/api/document.xml?crtfc_key="
     url = home + crtfc_key +  "&rcept_no=" + rcept_no
@@ -40,6 +42,11 @@ def gt_co_rept():
     soup = BeautifulSoup(co_rept, 'html.parser')
     str_xml = str(soup.prettify())
     str_list = str_xml.split('\n')
+
+    with open('./co_oview.txt', 'w', encoding='utf-8') as f:
+        for line in str_list:
+            f.writelines(line + '\n')
+    f.close()
 
     return str_list
 
@@ -61,9 +68,14 @@ def extr_sect(xml_orgi):
         cur_line = str_list[line_cnt]
         nxt_line = str_list[line_cnt + 2]
 
+        if '-="" <="" ' in cur_line:
+            cur_line = cur_line.replace('-="" <="" ', '')
+
         #if '추<=""' in cur_line:
         if '<=' in cur_line:
             cur_line = cur_line.replace('<=', '=')
+        else:
+            pass
 
         if tkn_sect_strt in cur_line:
             if token_start in str_list[line_cnt + 1]:
@@ -120,7 +132,7 @@ def pars_xml(xml_orgi):
 '''************************************************
 * @Function Name : filt_str
 ************************************************'''
-def filt_str(bdy_txt):
+def filt_speci_str(bdy_txt):
     filt_txt =''
     for line in bdy_txt:
 
@@ -290,7 +302,7 @@ def calc_tkn_kywds(kywds):
     import pandas as pd
 
     kywds_lt = pd.Series(kywds)
-    reslt = kywds_lt.value_counts().head(150)
+    reslt = kywds_lt.value_counts().head(200)
 
     kwds = list(reslt.index)
     kwd_val = list(reslt.values)
@@ -306,6 +318,30 @@ def calc_tkn_kywds(kywds):
             f.writelines(kwd + '             ' + val +'\n')
     f.close()
 
+
+'''************************************************
+* @Function Name : filt_industry_word
+************************************************'''
+def filt_industry_word(kywds, path):  # 산업과 관련된 불필요한 용어 제거 예를 들어, '기업', '산업', '연간' 등
+    with open(path, 'r', encoding='utf-8') as f:
+        doc = f.readlines()
+        indwrds = []
+
+        for indwrd in doc:
+            indwrds.append(indwrd.replace('\n',''))
+    f.close()
+
+    filt_kywds = []
+    for keywd in kywds:
+        if keywd == '회사':
+            print(1)
+
+        if keywd not in indwrds:
+            filt_kywds.append(keywd)
+
+    return filt_kywds
+
+
 '''************************************************
 * @Function Name : main
 ************************************************'''
@@ -316,12 +352,14 @@ def main():
     res = gt_co_rept()
     res = extr_sect(res)
     res = pars_xml(res)
-    doc = filt_str(res)
+    doc = filt_speci_str(res)
 
     stpwrds = ld_stpwrd(stpwrd_path)
     tkned = gt_tkn(doc)
 
     res = anly_tkn(stpwrds, tkned)
+    res = filt_industry_word(res, indwrd_path)
+
     res = dedup_tkn(res)
     calc_tkn_kywds(res)
 
