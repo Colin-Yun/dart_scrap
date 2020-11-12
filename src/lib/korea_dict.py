@@ -19,7 +19,7 @@ for i in range(len(CHOSUNG_LIST) - 1):
     dic_verb_list.append([])
 
 '''************************************************
-* @Function Name : pars_xml
+* @Function Name : get_chosung
 ************************************************'''
 def get_chosung(verb):
     res_chosung = ''
@@ -33,7 +33,7 @@ def get_chosung(verb):
     return res_chosung
 
 '''************************************************
-* @Function Name : pars_xml
+* @Function Name : gen_kr_dict
 ************************************************'''
 def gen_kr_dict():
     file_list = os.listdir(path)
@@ -88,7 +88,7 @@ def gen_kr_dict():
 
 
 '''************************************************
-* @Function Name : pars_xml
+* @Function Name : get_dict
 ************************************************'''
 def get_dict(word):
     mtch_dict = []

@@ -4,9 +4,11 @@ from io import BytesIO
 from bs4 import BeautifulSoup
 
 import lib.korea_dict as kd
+from lib.get_corcept import *
 
-stpwrd_path = './doc/stopword/stopword_dict.txt'
-indwrd_path = './doc/indwrd/indwrd_dict.txt'
+stpwrd_path = './doc/stopword/stopword_dict.txt'        # 불용어사전
+indwrd_path = './doc/indwrd/indwrd_dict.txt'            # 회사용어관련 삭제단어 사전
+
 dict_list =[[]]
 for i in range(len(kd.CHOSUNG_LIST) - 1):
     dict_list.append([])
@@ -25,7 +27,10 @@ def gt_co_rept():
     #rcept_no = '20200515001237'     #"shupigan"
     #rcept_no = '20200515001547'     #파루
     #rcept_no = '20200515002575'     #레고캠바이오
-    rcept_no = '20200514000988'         #OCI
+    #rcept_no = '20200514000988'         #OCI
+    #rcept_no = '20200515000131'         #티씨케이
+    rcept_no =  '20200515002687'           #녹십자
+    #rcept_no = '20200515002412'         #더존비즈온
 
     home = "https://opendart.fss.or.kr/api/document.xml?crtfc_key="
     url = home + crtfc_key +  "&rcept_no=" + rcept_no
@@ -43,7 +48,7 @@ def gt_co_rept():
     str_xml = str(soup.prettify())
     str_list = str_xml.split('\n')
 
-    with open('./co_oview.txt', 'w', encoding='utf-8') as f:
+    with open('./co_oview.xml', 'w', encoding='utf-8') as f:
         for line in str_list:
             f.writelines(line + '\n')
     f.close()
@@ -130,27 +135,21 @@ def pars_xml(xml_orgi):
 
 
 '''************************************************
-* @Function Name : filt_str
+* @Function Name : filt_speci_str
 ************************************************'''
 def filt_speci_str(bdy_txt):
     filt_txt =''
-    for line in bdy_txt:
 
-        if '.' in line:
-            line = line.replace('&cr','').replace(',',' ').replace('.',' ').replace('(','').replace(')','').replace(';','').replace('/',' ')
-            filt_txt += line + '\n'
-        '''
-        if line == '&cr':
-            pass
-        else:
-            line = line.replace('&cr','').replace(',','').replace('(','').replace(')','').replace(';','')
-            filt_txt += line
-        '''
+    for line in bdy_txt:
+        line = line.replace('&cr','').replace(',',' ').replace('.',' ').replace('(',' ').replace(')',' ').replace(';',' ').replace('/','')
+        filt_txt += line + '\n'
+
+    gen_file('filt_txt.txt', filt_txt)
     return filt_txt
 
 
 '''************************************************
-* @Function Name : filt_str
+* @Function Name : ld_stpwrd
 ************************************************'''
 def ld_stpwrd(path):
     with open(path, 'r', encoding="utf-8") as f:
@@ -206,7 +205,6 @@ def anly_tkn(stpwrds, tkned):
                     else:
                         tkn = ''
 
-
             tkns.append(tkn)
     tkns = list(filter(None, tkns)) #빈문자열제거
 
@@ -226,35 +224,32 @@ def dedup_tkn(kwds):
 
         if len(kwd) > 1:
             kwd_filt.append(kwd)
-            for cmp_kwd in kwds:
-                if i != j:
-                    if len(cmp_kwd) > 2 and kwd != cmp_kwd: # 비교키워드와 동일하지 않을 경우에만 유사도 rate 계산
-                        if kwd in cmp_kwd:
-                            kwd_filt.append(kwd)
+            if is_eng(kwd) != True:
+                for cmp_kwd in kwds:
+                    if i != j:
+                        if len(cmp_kwd) > 2 and kwd != cmp_kwd: # 비교키워드와 동일하지 않을 경우에만 유사도 rate 계산
+                            if kwd in cmp_kwd:
+                                kwd_filt.append(kwd)
+                                kwd_spilt = cmp_kwd.split(kwd)
+                                mrg = ''
+                                for spilt_wds in kwd_spilt:
+                                    mrg += spilt_wds
 
-                            kwd_spilt = cmp_kwd.split(kwd)
-                            mrg = ''
-                            for spilt_wds in kwd_spilt:
-                                mrg += spilt_wds
-
-                            if len(mrg) > 1:
-                                kwds[j] = mrg
+                                if len(mrg) > 1:
+                                    kr_dict = ret_match_dict(mrg)
+                                    if mrg in kr_dict:  #우리말샘 전체 사전에서 탐색
+                                        kwds[j] = mrg   #사전에 있으면 병합된 단어 적용
+                                    else:
+                                        kwds[j] = cmp_kwd   #사전에 없으면 기존 단어 유지
+                                else:
+                                    kwds.pop(j)
                             else:
-                                kwds.pop(j)
+                                pass
                         else:
                             pass
-                        #rate = SequenceMatcher(None, kwd, cmp_kwd).ratio()
-                        '''
-                        if rate >=0.7:
-                            kwds[j] = kwd
-                        else:
-                            pass
-                        '''
                     else:
                         pass
-                else:
-                    pass
-                j += 1
+                    j += 1
         i += 1
     return kwd_filt
 
@@ -320,9 +315,10 @@ def calc_tkn_kywds(kywds):
 
 
 '''************************************************
-* @Function Name : filt_industry_word
+* @Function Name : filt_indwrds
 ************************************************'''
-def filt_industry_word(kywds, path):  # 산업과 관련된 불필요한 용어 제거 예를 들어, '기업', '산업', '연간' 등
+def filt_indwrds(kywds, path):  # 산업과 관련된 불필요한 용어 제거 예를 들어, '기업', '산업', '연간' 등
+
     with open(path, 'r', encoding='utf-8') as f:
         doc = f.readlines()
         indwrds = []
@@ -333,14 +329,55 @@ def filt_industry_word(kywds, path):  # 산업과 관련된 불필요한 용어 
 
     filt_kywds = []
     for keywd in kywds:
-        if keywd == '회사':
-            print(1)
 
+        '''
         if keywd not in indwrds:
             filt_kywds.append(keywd)
+        '''
+        for indwrd in indwrds:
+            if indwrd in keywd:
+                keywd = keywd.replace(indwrd, '')
+
+        if len(keywd) > 1:
+            filt_kywds.append(keywd)
+        else:
+            pass
 
     return filt_kywds
 
+
+'''************************************************
+* @Function Name : mk_file
+************************************************'''
+def gen_file(fnme, dat):
+    fpath = './gen_' + fnme
+
+    with open(fpath, 'w', encoding='utf-8') as f:
+        if type(dat) == list:
+            for lne in dat:
+                f.writelines(lne)
+
+        elif type(dat) == str:
+            f.write(dat)
+
+        else:
+            pass
+    f.close()
+    return
+
+'''************************************************
+* @Function Name : main
+************************************************'''
+def is_eng(tkn):
+    wrd = tkn[0]
+
+    res = False
+    if ord('a') <= ord(wrd.lower()) <= ord('z'):
+        res = True
+    else:
+        pass
+
+    return res
 
 '''************************************************
 * @Function Name : main
@@ -348,17 +385,16 @@ def filt_industry_word(kywds, path):  # 산업과 관련된 불필요한 용어 
 def main():
     #kd.gen_kr_dict()
     gt_kr_dict()
+    stpwrds = ld_stpwrd(stpwrd_path)
 
     res = gt_co_rept()
     res = extr_sect(res)
     res = pars_xml(res)
     doc = filt_speci_str(res)
 
-    stpwrds = ld_stpwrd(stpwrd_path)
     tkned = gt_tkn(doc)
-
     res = anly_tkn(stpwrds, tkned)
-    res = filt_industry_word(res, indwrd_path)
+    res = filt_indwrds(res, indwrd_path)
 
     res = dedup_tkn(res)
     calc_tkn_kywds(res)
