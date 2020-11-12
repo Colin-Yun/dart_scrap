@@ -90,6 +90,12 @@ def gt_rcept_no(co_codes):
     with open('./doc/co_rcept_no/co_rcept_no.txt', 'w', encoding='utf-8') as f:
         for co_rcept in co_rcept_no:
             f.writelines(co_rcept + '\n')
+
+        f.writelines("===========================================================\n")
+
+        for co_none in except_co:
+            f.writelines(co_none + '\n')
+
         f.flush()
     f.close()
 
