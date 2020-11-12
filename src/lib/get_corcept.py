@@ -88,7 +88,7 @@ def gt_rcept_no(co_codes):
             except_co.append(co_code[1])
 
     with open('./doc/co_rcept_no/co_rcept_no.txt', 'w', encoding='utf-8') as f:
-        for co_rcept in co_rcept_no:
+        for co_rcept in include_co:
             f.writelines(co_rcept + '\n')
 
         f.writelines("===========================================================\n")
