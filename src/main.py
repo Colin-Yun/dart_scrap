@@ -20,7 +20,7 @@ def gt_co_rept():
 
     crtfc_key ="956243c104077738ebc3c93bd62c3e0c019eb877"
 
-    #rcept_no = "20201111000101"     #파이오링크
+    rcept_no = "20201111000101"     #파이오링크
     #rcept_no = "20201110000346"     #솔브레인홀딩스
     #rcept_no = "20200515001451"     #samsung
     #rcept_no = "20200515000890"    #seohan
@@ -29,7 +29,7 @@ def gt_co_rept():
     #rcept_no = '20200515002575'     #레고캠바이오
     #rcept_no = '20200514000988'         #OCI
     #rcept_no = '20200515000131'         #티씨케이
-    rcept_no =  '20200515002687'           #녹십자
+    #rcept_no =  '20200515002687'           #녹십자
     #rcept_no = '20200515002412'         #더존비즈온
 
     home = "https://opendart.fss.or.kr/api/document.xml?crtfc_key="
@@ -384,6 +384,8 @@ def is_eng(tkn):
 ************************************************'''
 def main():
     #kd.gen_kr_dict()
+    acc_dart()
+
     gt_kr_dict()
     stpwrds = ld_stpwrd(stpwrd_path)
 
